@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hexagon Shape Picker</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+
+        .hex-container {
+            position: relative;
+            width: 50vmin;
+            height: 50vmin;
+        }
+
+        .point {
+            position: absolute;
+            width: 10vmin;
+            height: 10vmin;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+
+        .point svg,
+        .point img {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 1px white);
+        }
+
+        .point img.triangle-adjust {
+            transform: translateY(-4%);
+        }
+
+        .point-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4vmin;
+            font-weight: bold;
+            color: white;
+            background: none;
+            border: none;
+            width: 25%;
+            text-align: center;
+            outline: none;
+        }
+
+        .center-input {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4vmin;
+            font-weight: bold;
+            color: white;
+            background: none;
+            border: none;
+            text-align: center;
+            width: 2vmin;
+            outline: none;
+        }
+
+        .line {
+            position: absolute;
+            background-color: white;
+            height: 0.6vmin;
+            transform-origin: left center;
+            border-radius: 0.25vmin;
+        }
+
+        .line.dotted {
+            background-image: repeating-linear-gradient(to right, white, white 1.5vmin, transparent 1.5vmin, transparent 3vmin);
+            background-color: transparent;
+        }
+
+        .line.tick::after {
+            content: '';
+            position: absolute;
+            width: 0.6vmin;
+            height: 2.5vmin;
+            background: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hex-container" id="hex">
+        <input class="center-input" maxlength="1" />
+    </div>
+    <button onclick="takeSnapshot()">Save Dungeon Image</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+        const container = document.getElementById('hex');
+        const containerSize = container.getBoundingClientRect().width;
+        const cx = containerSize / 2;
+        const cy = containerSize / 2;
+        const radius = containerSize * 0.4;
+
+        const points = [
+            { id: 'nw', angle: 210 },
+            { id: 'n', angle: 270 },
+            { id: 'ne', angle: 330 },
+            { id: 'se', angle: 30 },
+            { id: 's', angle: 90 },
+            { id: 'sw', angle: 150 },
+            { id: 'center', x: cx, y: cy }
+        ];
+
+        const shapes = ['triangle', 'circle', 'diamond', 'none'];
+        const connections = [
+            ['nw', 'n'], ['n', 'ne'], ['ne', 'se'], ['se', 's'], ['s', 'sw'], ['sw', 'nw'],
+            ['center', 'nw'], ['center', 'n'], ['center', 'ne'], ['center', 'se'], ['center', 's'], ['center', 'sw']
+        ];
+
+        const shapeState = {};
+        const lineState = {};
+        const pointEls = {};
+        const lineEls = {};
+
+        function polarToCartesian(angleDeg) {
+            const angleRad = angleDeg * Math.PI / 180;
+            return {
+                x: cx + radius * Math.cos(angleRad),
+                y: cy + radius * Math.sin(angleRad)
+            };
+        }
+
+        function createShape(point) {
+            let x = point.x, y = point.y;
+            if (typeof point.angle === 'number') {
+                const pos = polarToCartesian(point.angle);
+                x = pos.x;
+                y = pos.y;
+            }
+
+            const el = document.createElement('div');
+            el.className = 'point';
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+
+            let shapeIndex = 0;
+            shapeState[point.id] = shapes[shapeIndex];
+
+            const svg = document.createElement('img');
+            svg.src = `assets/${shapes[shapeIndex]}.svg`;
+            svg.classList.toggle('triangle-adjust', shapes[shapeIndex] === 'triangle');
+            svg.style.display = shapes[shapeIndex] === 'none' ? 'none' : 'block';
+
+            const label = document.createElement('input');
+            label.className = 'point-label';
+            label.type = 'text';
+            label.maxLength = 1;
+            label.value = '1';
+            label.style.display = 'block';
+
+            el.appendChild(svg);
+            el.appendChild(label);
+            container.appendChild(el);
+
+            el.addEventListener('click', (e) => {
+                if (e.target === label) return;
+                shapeIndex = (shapeIndex + 1) % shapes.length;
+                shapeState[point.id] = shapes[shapeIndex];
+                const shape = shapes[shapeIndex];
+                shapeState[point.id] = shape;
+
+                svg.src = `assets/${shape}.svg`;
+                svg.classList.toggle('triangle-adjust', shape === 'triangle');
+
+                const show = shape !== 'none';
+                svg.style.display = show ? 'block' : 'none';
+                label.style.display = show ? 'block' : 'none';
+
+                updateLines();
+
+            });
+
+            pointEls[point.id] = { el, x, y };
+        }
+
+        points.forEach(createShape);
+
+        function createLine(id1, id2) {
+            const line = document.createElement('div');
+            line.className = 'line';
+
+            function positionLine() {
+                const p1 = pointEls[id1];
+                const p2 = pointEls[id2];
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                line.style.width = `${length}px`;
+                line.style.left = `${p1.x}px`;
+                line.style.top = `${p1.y}px`;
+                line.style.transform = `rotate(${angle}deg)`;
+            }
+
+            line.dataset.state = 'solid';
+            line.addEventListener('click', () => {
+                const order = ['solid', 'dotted', 'tick'];
+                const current = line.dataset.state;
+                const next = order[(order.indexOf(current) + 1) % order.length];
+                line.dataset.state = next;
+                line.className = 'line ' + (next === 'solid' ? '' : next);
+            });
+
+            positionLine();
+            container.appendChild(line);
+            return line;
+        }
+
+        connections.forEach(([a, b]) => {
+            const key = `${a}-${b}`;
+            lineEls[key] = createLine(a, b);
+        });
+
+        function updateLines() {
+            connections.forEach(([a, b]) => {
+                const line = lineEls[`${a}-${b}`];
+                const visible = shapeState[a] !== 'none' && shapeState[b] !== 'none';
+                line.style.display = visible ? 'block' : 'none';
+            });
+        }
+
+        function takeSnapshot() {
+            const target = document.getElementById('hex-dungeon');
+
+            html2canvas(target, {
+                width: 800,
+                height: 800,
+                scale: 1
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'hex-dungeon.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+
+</html>
