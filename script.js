@@ -7,12 +7,12 @@ const cy = containerSize / 2
 const radius = containerSize * 0.4
 
 const points = [
-  { id: 'nw', angle: 210 },
-  { id: 'n', angle: 270 },
-  { id: 'ne', angle: 330 },
-  { id: 'se', angle: 30 },
-  { id: 's', angle: 90 },
-  { id: 'sw', angle: 150 },
+  { id: 'nw', angle: 300 },
+  { id: 'n', angle: 0 },
+  { id: 'ne', angle: 60 },
+  { id: 'se', angle: 120 },
+  { id: 's', angle: 180 },
+  { id: 'sw', angle: 240 },
   { id: 'center', x: cx, y: cy }
 ]
 
