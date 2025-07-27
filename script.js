@@ -120,11 +120,28 @@ function createLine (id1, id2) {
 
   line.dataset.state = 'solid'
   line.addEventListener('click', () => {
-    const order = ['solid', 'dotted', 'tick']
+    const order = ['solid', 'dotted', 'tick', 'none']
     const current = line.dataset.state
     const next = order[(order.indexOf(current) + 1) % order.length]
     line.dataset.state = next
-    line.className = 'line ' + (next === 'solid' ? '' : next)
+
+    line.className = 'line'
+
+    if (next === 'dotted') {
+      line.classList.add('dotted')
+      line.style.opacity = '1'
+      line.style.pointerEvents = 'auto'
+    } else if (next === 'tick') {
+      line.classList.add('tick')
+      line.style.opacity = '1'
+      line.style.pointerEvents = 'auto'
+    } else if (next === 'solid') {
+      line.style.opacity = '1'
+      line.style.pointerEvents = 'auto'
+    } else if (next === 'none') {
+      line.style.opacity = '0.01'
+      line.style.pointerEvents = 'auto'
+    }
   })
 
   positionLine()
