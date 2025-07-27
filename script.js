@@ -85,7 +85,7 @@ function createShape (point) {
     const shape = shapes[shapeIndex]
     shapeState[point.id] = shape
 
-    svg.src = `assets/${shape}.svg`
+    svg.src = import.meta.env.BASE_URL + `${shape}.svg`
     svg.classList.toggle('triangle-adjust', shape === 'triangle')
 
     const show = shape !== 'none'
