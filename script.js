@@ -63,7 +63,7 @@ function createShape (point) {
   shapeState[point.id] = shapes[shapeIndex]
 
   const svg = document.createElement('img')
-  svg.src = `assets/${shapes[shapeIndex]}.svg`
+  svg.src = import.meta.env.BASE_URL + `${shapes[shapeIndex]}.svg`
   svg.classList.toggle('triangle-adjust', shapes[shapeIndex] === 'triangle')
   svg.style.display = shapes[shapeIndex] === 'none' ? 'none' : 'block'
 
